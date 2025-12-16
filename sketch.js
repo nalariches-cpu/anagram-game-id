@@ -1,29 +1,29 @@
 //
-// GPT Grabber - Indonesian Anagram Game for Kids (Expanded Word Bank)
+// GPT Grabber - Indonesian Anagram Game for Kids (Syllable Dashes)
 //
 
-// --- Word Bank (NEW: Expanded to 20 words, all with 5+ letters) ---
+// --- Word Bank (NEW: Added 'display' property for syllables) ---
 const words = [
-  { emoji: '🐈', id: 'kucing' },
-  { emoji: '🐕', id: 'anjing' },
-  { emoji: '🏠', id: 'rumah' },
-  { emoji: '🚗', id: 'mobil' },
-  { emoji: '🐘', id: 'gajah' },
-  { emoji: '🐅', id: 'harimau' },
-  { emoji: '🦒', id: 'jerapah' },
-  { emoji: '🍌', id: 'pisang' },
-  { emoji: '🍉', id: 'semangka' },
-  { emoji: '🍍', id: 'nanas' },
-  { emoji: '🍊', id: 'jeruk' },
-  { emoji: '🏫', id: 'sekolah' },
-  { emoji: '👟', id: 'sepatu' },
-  { emoji: '👖', id: 'celana' },
-  { emoji: '🚪', id: 'pintu' },
-  { emoji: '⭐', id: 'bintang' },
-  { emoji: '☀️', id: 'matahari' },
-  { emoji: '🌈', id: 'pelangi' },
-  { emoji: '🚲', id: 'sepeda' },
-  { emoji: '✏️', id: 'pensil' },
+  { emoji: '🐈', id: 'kucing', display: 'ku-cing' },
+  { emoji: '🐕', id: 'anjing', display: 'an-jing' },
+  { emoji: '🏠', id: 'rumah', display: 'ru-mah' },
+  { emoji: '🚗', id: 'mobil', display: 'mo-bil' },
+  { emoji: '🐘', id: 'gajah', display: 'ga-jah' },
+  { emoji: '🐅', id: 'harimau', display: 'ha-ri-mau' },
+  { emoji: '🦒', id: 'jerapah', display: 'je-ra-pah' },
+  { emoji: '🍌', id: 'pisang', display: 'pi-sang' },
+  { emoji: '🍉', id: 'semangka', display: 'se-mang-ka' },
+  { emoji: '🍍', id: 'nanas', display: 'na-nas' },
+  { emoji: '🍊', id: 'jeruk', display: 'je-ruk' },
+  { emoji: '🏫', id: 'sekolah', display: 'se-ko-lah' },
+  { emoji: '👟', id: 'sepatu', display: 'se-pa-tu' },
+  { emoji: '👖', id: 'celana', display: 'ce-la-na' },
+  { emoji: '🚪', id: 'pintu', display: 'pin-tu' },
+  { emoji: '⭐', id: 'bintang', display: 'bin-tang' },
+  { emoji: '☀️', id: 'matahari', display: 'ma-ta-ha-ri' },
+  { emoji: '🌈', id: 'pelangi', display: 'pe-la-ngi' },
+  { emoji: '🚲', id: 'sepeda', display: 'se-pe-da' },
+  { emoji: '✏️', id: 'pensil', display: 'pen-sil' },
 ];
 
 let currentWordIndex = 0;
@@ -31,6 +31,7 @@ let currentWord;
 let emoji;
 let scrambledLetters = [];
 let answerSlots = [];
+let dashPositions = []; // To store where dashes go
 
 let draggedLetter = null;
 let offsetX, offsetY;
@@ -63,6 +64,22 @@ function draw() {
     slot.draw();
   }
 
+  // --- NEW: Draw syllable dashes ---
+  fill(255);
+  stroke(0);
+  strokeWeight(3);
+  textSize(60);
+  textAlign(CENTER, CENTER);
+  for (let i = 0; i < answerSlots.length - 1; i++) {
+    if (dashPositions.includes(i)) {
+      const slot1 = answerSlots[i];
+      const slot2 = answerSlots[i+1];
+      const dashX = (slot1.x + slot1.w + slot2.x) / 2;
+      const dashY = slot1.y + slot1.h / 2;
+      text('-', dashX, dashY);
+    }
+  }
+
   // Draw the letter tiles
   for (const letter of scrambledLetters) {
     if (letter !== draggedLetter) {
@@ -86,11 +103,23 @@ function draw() {
 // --- Game Logic ---
 
 function loadWord(index) {
-  currentWord = words[index].id.toUpperCase();
-  emoji = words[index].emoji;
+  const wordData = words[index];
+  currentWord = wordData.id.toUpperCase();
+  emoji = wordData.emoji;
+
+  // --- NEW: Calculate dash positions from syllabified word ---
+  const syllabifiedWord = wordData.display.toUpperCase();
+  dashPositions = [];
+  let letterCount = 0;
+  const syllables = syllabifiedWord.split('-');
+  for (const syllable of syllables) {
+    letterCount += syllable.length;
+    dashPositions.push(letterCount - 1);
+  }
+  dashPositions.pop(); // Remove the last one, no dash at the end of the word
 
   // Bigger sizes and spacing for easier interaction
-  const slotWidth = min(width / (currentWord.length + 1), 90);
+  const slotWidth = min(width / (currentWord.length + 1.5), 90);
   const slotSpacing = 25;
   const tileWidth = slotWidth * 0.9;
   const tileSpacing = 20;
