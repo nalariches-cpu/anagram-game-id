@@ -1,21 +1,29 @@
 //
-// GPT Grabber - Indonesian Anagram Game for Kids
+// GPT Grabber - Indonesian Anagram Game for Kids (Expanded Word Bank)
 //
 
-// --- Word Bank ---
-// Add more words here to expand the game!
+// --- Word Bank (NEW: Expanded to 20 words, all with 5+ letters) ---
 const words = [
-  { emoji: '🍎', id: 'apel' },
-  { emoji: '👀', id: 'mata' },
   { emoji: '🐈', id: 'kucing' },
   { emoji: '🐕', id: 'anjing' },
   { emoji: '🏠', id: 'rumah' },
   { emoji: '🚗', id: 'mobil' },
-  { emoji: '⚽', id: 'bola' },
-  { emoji: '🥛', id: 'susu' },
-  { emoji: '🍞', id: 'roti' },
-  { emoji: '🐟', id: 'ikan' },
-  { emoji: '📖', id: 'buku' },
+  { emoji: '🐘', id: 'gajah' },
+  { emoji: '🐅', id: 'harimau' },
+  { emoji: '🦒', id: 'jerapah' },
+  { emoji: '🍌', id: 'pisang' },
+  { emoji: '🍉', id: 'semangka' },
+  { emoji: '🍍', id: 'nanas' },
+  { emoji: '🍊', id: 'jeruk' },
+  { emoji: '🏫', id: 'sekolah' },
+  { emoji: '👟', id: 'sepatu' },
+  { emoji: '👖', id: 'celana' },
+  { emoji: '🚪', id: 'pintu' },
+  { emoji: '⭐', id: 'bintang' },
+  { emoji: '☀️', id: 'matahari' },
+  { emoji: '🌈', id: 'pelangi' },
+  { emoji: '🚲', id: 'sepeda' },
+  { emoji: '✏️', id: 'pensil' },
 ];
 
 let currentWordIndex = 0;
@@ -81,28 +89,30 @@ function loadWord(index) {
   currentWord = words[index].id.toUpperCase();
   emoji = words[index].emoji;
 
+  // Bigger sizes and spacing for easier interaction
+  const slotWidth = min(width / (currentWord.length + 1), 90);
+  const slotSpacing = 25;
+  const tileWidth = slotWidth * 0.9;
+  const tileSpacing = 20;
+
   // Create answer slots
   answerSlots = [];
-  const slotWidth = 80;
-  const slotSpacing = 20;
   const totalWidth = currentWord.length * (slotWidth + slotSpacing) - slotSpacing;
   let startX = (width - totalWidth) / 2;
   for (let i = 0; i < currentWord.length; i++) {
-    answerSlots.push(new AnswerSlot(startX + i * (slotWidth + slotSpacing), height * 0.5, slotWidth, slotWidth));
+    answerSlots.push(new AnswerSlot(startX + i * (slotWidth + slotSpacing), height * 0.55, slotWidth, slotWidth));
   }
 
   // Create draggable letter tiles
   scrambledLetters = [];
   let shuffledChars = shuffle(currentWord.split(''));
-  const tileWidth = 70;
-  const tileSpacing = 20;
   const totalTileWidth = shuffledChars.length * (tileWidth + tileSpacing) - tileSpacing;
   let tileStartX = (width - totalTileWidth) / 2;
   for (let i = 0; i < shuffledChars.length; i++) {
     scrambledLetters.push(new LetterTile(
       shuffledChars[i],
       tileStartX + i * (tileWidth + tileSpacing),
-      height * 0.75,
+      height * 0.8,
       tileWidth
     ));
   }
@@ -160,9 +170,10 @@ function drawFeedback() {
 }
 
 
-// --- Controls (Mouse & Touch) ---
+// --- Controls (Mouse, Touch, and Keyboard) ---
 
 function touchStarted() {
+  if (gameState !== 'playing') return;
   // Find which letter is being picked up
   for (let i = scrambledLetters.length - 1; i >= 0; i--) {
     const letter = scrambledLetters[i];
@@ -204,11 +215,7 @@ function touchEnded() {
       // If the slot is NOT empty, swap letters
       else {
         let otherLetter = slot.letterTile;
-        
-        // Put the other letter back to its original home
         otherLetter.snapTo(otherLetter.homeX, otherLetter.homeY);
-
-        // Put the dragged letter in the slot
         slot.letterTile = draggedLetter;
         draggedLetter.snapTo(slot.x + slot.w/2, slot.y + slot.h/2);
         droppedInSlot = true;
@@ -225,6 +232,55 @@ function touchEnded() {
   draggedLetter = null;
   checkWinCondition();
   return false; // Prevent default
+}
+
+function keyPressed() {
+  if (gameState !== 'playing') return;
+
+  // Use backspace to remove the last letter placed
+  if (keyCode === BACKSPACE) {
+    for (let i = answerSlots.length - 1; i >= 0; i--) {
+      const slot = answerSlots[i];
+      if (slot.letterTile) {
+        const letterToReturn = slot.letterTile;
+        slot.letterTile = null;
+        letterToReturn.snapTo(letterToReturn.homeX, letterToReturn.homeY);
+        break; // Remove one at a time
+      }
+    }
+    return;
+  }
+
+  const typedChar = key.toUpperCase();
+  
+  // Find the next empty slot
+  let targetSlot = null;
+  for (const slot of answerSlots) {
+    if (slot.letterTile === null) {
+      targetSlot = slot;
+      break;
+    }
+  }
+
+  if (!targetSlot) return; // All slots are full
+
+  // Find an available letter that matches the key pressed
+  let letterToPlace = null;
+  const placedLetters = answerSlots.map(slot => slot.letterTile).filter(tile => tile !== null);
+  for (const letter of scrambledLetters) {
+    // Check if it's the right character and not already in a slot
+    if (letter.char === typedChar && !placedLetters.includes(letter)) {
+      letterToPlace = letter;
+      break;
+    }
+  }
+
+  // If a matching, available letter was found, place it
+  if (letterToPlace) {
+    targetSlot.letterTile = letterToPlace;
+    letterToPlace.snapTo(targetSlot.x + targetSlot.w / 2, targetSlot.y + targetSlot.h / 2);
+    checkWinCondition();
+  }
 }
 
 // --- Classes ---
